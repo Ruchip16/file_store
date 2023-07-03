@@ -10,6 +10,8 @@ To implement the backend file store service that has a simple HTTP server and a 
  
  ## To Run the code:
 
+**Note: both the server and the client should be running simultaneously for the commands to work correctly.**
+
 - Fork and clone the repository
 - to start the server: `python server.py`
 - to start the client: `python client.py <command> <arguments>`
