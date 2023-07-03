@@ -1,7 +1,7 @@
 import requests
 import argparse
 
-BASE_URL = 'http://localhost:5000/store'
+SERVER_URL = 'http://localhost:5000'
 
 
 def add_files(filenames):
@@ -27,27 +27,40 @@ def update_file(filename):
 
 
 def word_count():
-    response = requests.get(f'{BASE_URL}/wc')
-    data = response.json()
-    print(f"Total word count: {data['word_count']}")
+    response = requests.get(f'{SERVER_URL}/wc')
+    if response.status_code == 200:
+        count = response.json()['count']
+        print(f"Total word count: {count}")
+    else:
+        print("Failed to retrieve word count.")
 
 
 def frequent_words(limit=10, order='dsc'):
-    params = {'limit': limit, 'order': order}
-    response = requests.get(f'{BASE_URL}/freq-words', params=params)
-    data = response.json()
-    frequent_words = data['frequent_words']
-
-    print(f"{'Word': <15} {'Count': <10}")
-    print("---------------------------")
-    for word_data in frequent_words:
-        print(f"{word_data['word']: <15} {word_data['count']: <10}")
+    params = {
+        'limit': limit,
+        'order': order
+    }
+    response = requests.get(f'{SERVER_URL}/freq-words', params=params)
+    if response.status_code == 200:
+        words = response.json()['words']
+        print(f"Most frequent words (limit: {limit}, order: {order}):")
+        for word, count in words:
+            print(f"{word}: {count}")
+    else:
+        print("Failed to retrieve frequent words.")
 
 
 if __name__ == '__main__':
-    parser = argparse.ArgumentParser(description='File Store Command Line Client')
+    parser = argparse.ArgumentParser(prog='store', description='File Store Client')
     parser.add_argument('command', choices=['add', 'ls', 'rm', 'update', 'wc', 'freq-words'], help='Command to execute')
     parser.add_argument('arguments', nargs='*', help='Arguments for the command')
+    subparsers = parser.add_subparsers(dest='command')
+    parser_wc = subparsers.add_parser('wc', help='Word count')
+    parser_wc.set_defaults(func=word_count)
+    parser_freq_words = subparsers.add_parser('freq-words', help='Frequent words')
+    parser_freq_words.add_argument('--limit', '-n', type=int, default=10, help='Limit number of words')
+    parser_freq_words.add_argument('--order', choices=['asc', 'dsc'], default='dsc', help='Word order')
+    parser_freq_words.set_defaults(func=frequent_words)
     args = parser.parse_args()
 
     command = args.command
@@ -64,3 +77,7 @@ if __name__ == '__main__':
         word_count()
     elif command == 'freq-words':
         frequent_words(*args.arguments)
+    elif hasattr(args, 'func'):
+        args.func()
+    else:
+        parser.print_help()
